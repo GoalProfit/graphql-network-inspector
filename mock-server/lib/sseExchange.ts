@@ -1,13 +1,16 @@
 'use client';
 
-import { Exchange, Operation, OperationResult } from 'urql';
+import { type Exchange, type Operation, type OperationResult } from 'urql';
 import { pipe, filter, merge, mergeMap, make, share, takeUntil } from 'wonka';
 
+// Supports both distinct connections (data: ExecutionResult) and legacy (data: { payload })
 interface SSEPayload {
-  payload: {
+  payload?: {
     data?: unknown;
     errors?: Array<{ message: string }>;
   };
+  data?: unknown;
+  errors?: Array<{ message: string }>;
 }
 
 function isSubscriptionOperation(operation: Operation): boolean {
@@ -29,17 +32,20 @@ function createSSESource(operation: Operation) {
     const url = `/api/graphql/sse?${params.toString()}`;
     const eventSource = new EventSource(url);
 
-    eventSource.onmessage = (event) => {
+    const handleMessage = (event: MessageEvent) => {
       try {
         const parsed: SSEPayload = JSON.parse(event.data);
+        const payload = parsed.payload ?? parsed;
+        const data = 'data' in payload ? payload.data : undefined;
+        const errors = 'errors' in payload ? payload.errors : undefined;
         next({
           operation,
-          data: parsed.payload.data,
-          error: parsed.payload.errors
+          data,
+          error: errors
             ? ({
                 name: 'GraphQLError',
-                message: parsed.payload.errors[0]?.message || 'Unknown error',
-                graphQLErrors: parsed.payload.errors,
+                message: errors[0]?.message ?? 'Unknown error',
+                graphQLErrors: errors,
                 networkError: undefined,
               } as OperationResult['error'])
             : undefined,
@@ -51,6 +57,10 @@ function createSSESource(operation: Operation) {
         // Skip invalid JSON
       }
     };
+
+    // Server sends event: next (GraphQL over SSE protocol); onmessage only catches default "message" type
+    eventSource.addEventListener('next', handleMessage);
+    eventSource.onmessage = handleMessage; // fallback for event: message or no event line
 
     eventSource.onerror = () => {
       next({
