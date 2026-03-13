@@ -104,6 +104,11 @@ export const ResponseView = (props: IResponseViewProps) => {
                     </span>
                   )}
                 </span>
+                <CopyButton
+                  textToCopy={safeJson.stringify(item.data || {}, undefined, 2)}
+                  label="Copy"
+                  className="shrink-0"
+                />
               </div>
               <JsonView src={item.data || {}} collapsed={1} />
             </div>
