@@ -19,6 +19,17 @@ jest.mock('@/services/userSettingsService', () => ({
   setUserSettings: jest.fn(),
 }))
 
+jest.mock('@/services/operationFiltersService', () => ({
+  getOperationFilters: (cb: (f: object) => void) =>
+    cb({
+      query: true,
+      mutation: true,
+      subscription: false,
+      persisted: true,
+    }),
+  setOperationFilters: jest.fn(),
+}))
+
 const mockChromeProvider = chromeProvider as jest.Mock
 
 const mockOnNavigated = () => {
