@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 
-export type TransportType = 'websocket' | 'sse';
+export type TransportType = 'websocket' | 'sse' | 'sse-post';
 
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
@@ -19,6 +19,7 @@ function setCookie(name: string, value: string): void {
 export function getTransportFromCookie(): TransportType {
   const value = getCookie('transport');
   if (value === 'sse') return 'sse';
+  if (value === 'sse-post') return 'sse-post';
   return 'websocket';
 }
 

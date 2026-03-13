@@ -65,6 +65,7 @@ export function TransportToggle() {
       <span style={styles.label}>Subscription Transport:</span>
       <div style={styles.buttonGroup}>
         <button
+          type="button"
           style={{
             ...styles.button,
             ...(transport === 'websocket' ? styles.activeButton : {}),
@@ -74,17 +75,32 @@ export function TransportToggle() {
           WebSocket
         </button>
         <button
+          type="button"
           style={{
             ...styles.button,
             ...(transport === 'sse' ? styles.activeButton : {}),
           }}
           onClick={() => handleTransportChange('sse')}
         >
-          SSE
+          SSE (GET)
+        </button>
+        <button
+          type="button"
+          style={{
+            ...styles.button,
+            ...(transport === 'sse-post' ? styles.activeButton : {}),
+          }}
+          onClick={() => handleTransportChange('sse-post')}
+        >
+          SSE (POST)
         </button>
       </div>
       <span style={styles.indicator}>
-        {transport === 'websocket' ? 'ws://localhost:3000/graphql' : 'EventSource /api/graphql/sse'}
+        {transport === 'websocket'
+          ? 'ws://localhost:3000/graphql'
+          : transport === 'sse'
+            ? 'EventSource GET /api/graphql/sse'
+            : 'fetch POST /api/graphql/sse'}
       </span>
     </div>
   );

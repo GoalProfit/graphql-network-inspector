@@ -159,13 +159,16 @@ async function executeSubscription(
       const encoder = new TextEncoder();
       try {
         for await (const value of result as AsyncIterable<{ data?: unknown; errors?: GraphQLError[] }>) {
-          const payload = { payload: value };
-          const message = `data: ${JSON.stringify(payload)}\n\n`;
+          // Distinct connections mode: data contains ExecutionResult directly
+          // https://github.com/enisdenjo/graphql-sse/blob/master/PROTOCOL.md#distinct-connections-mode
+          const message = `event: next\ndata: ${JSON.stringify(value)}\n\n`;
           controller.enqueue(encoder.encode(message));
         }
+        // Per protocol: include empty data for EventSource compatibility
+        controller.enqueue(encoder.encode('event: complete\ndata: \n\n'));
       } catch (error) {
-        const errorPayload = { payload: { errors: [{ message: String(error) }] } };
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorPayload)}\n\n`));
+        const errorPayload = { errors: [{ message: String(error) }] };
+        controller.enqueue(encoder.encode(`event: next\ndata: ${JSON.stringify(errorPayload)}\n\n`));
       } finally {
         controller.close();
       }

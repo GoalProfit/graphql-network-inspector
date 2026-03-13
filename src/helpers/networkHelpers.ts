@@ -532,3 +532,88 @@ export const parseMultipartMixedResponse = (
 
   return chunks
 }
+
+/**
+ * Check if a response is Server-Sent Events (text/event-stream).
+ *
+ * Used for HTTP POST requests that return SSE streams (e.g. GraphQL
+ * subscriptions over HTTP, incremental search results).
+ *
+ * @param headers - Array of response headers to check
+ * @returns true if the Content-Type header indicates text/event-stream
+ */
+export const isSSEResponse = (headers: IHeader[]): boolean => {
+  const contentType = headers.find(
+    (header) => header.name.toLowerCase() === 'content-type'
+  )?.value
+  return contentType?.includes('text/event-stream') || false
+}
+
+/**
+ * Parse a Server-Sent Events (SSE) response body into individual chunks.
+ *
+ * Implements the GraphQL over SSE protocol (distinct connections mode):
+ * https://github.com/enisdenjo/graphql-sse/blob/master/PROTOCOL.md#distinct-connections-mode
+ *
+ * - `event: next` → data contains ExecutionResult, add as chunk
+ * - `event: complete` → stream ended, skip (no payload to display)
+ * - No event line → default "message", process data (backwards compatibility)
+ *
+ * @example
+ * // Distinct connections mode:
+ * // event: next
+ * // data: {"data":{"user":{"id":"1"}}}
+ *
+ * // event: complete
+ * // data:
+ *
+ * @param body - The raw SSE response body string
+ * @returns Array of parsed response chunks
+ */
+export const parseSSEResponse = (body: string): IResponseChunk[] => {
+  const chunks: IResponseChunk[] = []
+
+  if (!body || !body.trim()) {
+    return chunks
+  }
+
+  // Normalize line endings to \n
+  const normalizedBody = body.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+
+  // Split by double newline (event separator per SSE spec)
+  const eventBlocks = normalizedBody.split(/\n\n+/)
+
+  for (const block of eventBlocks) {
+    const lines = block.split('\n')
+    let eventType: string | undefined
+    const dataLines: string[] = []
+
+    for (const line of lines) {
+      const trimmed = line.trimStart()
+      if (trimmed.startsWith('event:')) {
+        eventType = trimmed.slice(6).trim()
+      } else if (trimmed.startsWith('data:')) {
+        const payload = trimmed.slice(5).trimStart()
+        dataLines.push(payload)
+      }
+    }
+
+    // Per protocol: skip "complete" events (no meaningful payload)
+    if (eventType === 'complete') {
+      continue
+    }
+
+    if (dataLines.length > 0) {
+      const chunkBody = dataLines.join('\n')
+      if (chunkBody) {
+        chunks.push({
+          body: chunkBody,
+          timestamp: Date.now(),
+          isIncremental: chunks.length > 0,
+        })
+      }
+    }
+  }
+
+  return chunks
+}
