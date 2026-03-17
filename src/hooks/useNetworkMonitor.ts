@@ -21,6 +21,8 @@ import {
   isMultipartMixedResponse,
   getMultipartMixedBoundary,
   parseMultipartMixedResponse,
+  isSSEResponse,
+  parseSSEResponse,
 } from '../helpers/networkHelpers'
 import useLatestState from './useLatestState'
 
@@ -93,6 +95,18 @@ const processNetworkRequest = (
       }
     } catch (e) {
       console.error('Error parsing multipart response:', e)
+      // Fall back to treating as regular response
+    }
+  } else if (isSSEResponse(details.response.headers)) {
+    try {
+      chunks = parseSSEResponse(responseBody)
+      isStreaming = true
+
+      if (chunks.length > 0) {
+        finalBody = chunks[0].body
+      }
+    } catch (e) {
+      console.error('Error parsing SSE response:', e)
       // Fall back to treating as regular response
     }
   }

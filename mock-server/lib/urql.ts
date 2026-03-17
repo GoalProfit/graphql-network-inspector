@@ -3,6 +3,7 @@
 import { createClient, fetchExchange, subscriptionExchange, Client } from 'urql';
 import { createClient as createWSClient } from 'graphql-ws';
 import { sseExchange } from './sseExchange';
+import { ssePostExchange } from './ssePostExchange';
 import { TransportType, getTransportFromCookie } from './useTransport';
 
 let client: Client | null = null;
@@ -22,6 +23,11 @@ export function getUrqlClient(transport?: TransportType): Client {
     client = createClient({
       url: '/api/graphql',
       exchanges: [fetchExchange, sseExchange],
+    });
+  } else if (resolvedTransport === 'sse-post') {
+    client = createClient({
+      url: '/api/graphql',
+      exchanges: [fetchExchange, ssePostExchange],
     });
   } else {
     const wsClient = createWSClient({

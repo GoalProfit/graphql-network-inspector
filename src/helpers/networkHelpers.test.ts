@@ -585,3 +585,149 @@ describe('networkHelpers.getMultipartMixedBoundary', () => {
     expect(getMultipartMixedBoundary(headers)).toBeUndefined()
   })
 })
+
+describe('networkHelpers.isSSEResponse', () => {
+  it('returns true for text/event-stream content-type', () => {
+    const { isSSEResponse } = require('./networkHelpers')
+    const headers: IHeader[] = [
+      {
+        name: 'content-type',
+        value: 'text/event-stream',
+      },
+    ]
+
+    expect(isSSEResponse(headers)).toBe(true)
+  })
+
+  it('returns true for text/event-stream with charset', () => {
+    const { isSSEResponse } = require('./networkHelpers')
+    const headers: IHeader[] = [
+      {
+        name: 'Content-Type',
+        value: 'text/event-stream; charset=utf-8',
+      },
+    ]
+
+    expect(isSSEResponse(headers)).toBe(true)
+  })
+
+  it('returns false for non-SSE content-type', () => {
+    const { isSSEResponse } = require('./networkHelpers')
+    const headers: IHeader[] = [
+      {
+        name: 'content-type',
+        value: 'application/json',
+      },
+    ]
+
+    expect(isSSEResponse(headers)).toBe(false)
+  })
+
+  it('returns false when no content-type header', () => {
+    const { isSSEResponse } = require('./networkHelpers')
+    const headers: IHeader[] = []
+
+    expect(isSSEResponse(headers)).toBe(false)
+  })
+})
+
+describe('networkHelpers.parseSSEResponse', () => {
+  it('parses a single SSE event', () => {
+    const { parseSSEResponse } = require('./networkHelpers')
+    const sseBody = `event: next
+      data: {"data":{"user":{"id":"1"}}}`
+
+    const chunks = parseSSEResponse(sseBody)
+
+    expect(chunks).toHaveLength(1)
+    expect(chunks[0].body).toBe('{"data":{"user":{"id":"1"}}}')
+    expect(chunks[0].isIncremental).toBe(false)
+  })
+
+  it('parses multiple SSE events', () => {
+    const { parseSSEResponse } = require('./networkHelpers')
+    const sseBody = `event: next
+      data: {"data":{"user":{"id":"1"}}}
+
+      event: next
+      data: {"data":{"user":{"name":"John"}}}`
+
+    const chunks = parseSSEResponse(sseBody)
+
+    expect(chunks).toHaveLength(2)
+    expect(JSON.parse(chunks[0].body)).toMatchObject({ data: { user: { id: '1' } } })
+    expect(chunks[0].isIncremental).toBe(false)
+    expect(JSON.parse(chunks[1].body)).toMatchObject({ data: { user: { name: 'John' } } })
+    expect(chunks[1].isIncremental).toBe(true)
+  })
+
+  it('handles multi-line data payload (SSE continuation)', () => {
+    const { parseSSEResponse } = require('./networkHelpers')
+    const sseBody = `event: next
+      data: {"data":{"items":[
+      data: {"id":"1"}]}}`
+
+    const chunks = parseSSEResponse(sseBody)
+
+    expect(chunks).toHaveLength(1)
+    expect(chunks[0].body).toContain('{"id":"1"}')
+  })
+
+  it('returns empty array for empty body', () => {
+    const { parseSSEResponse } = require('./networkHelpers')
+
+    expect(parseSSEResponse('')).toHaveLength(0)
+    expect(parseSSEResponse('   ')).toHaveLength(0)
+  })
+
+  it('ignores events without data lines', () => {
+    const { parseSSEResponse } = require('./networkHelpers')
+    const sseBody = `event: ping
+      event: next
+      data: {"data":{"ok":true}}`
+
+    const chunks = parseSSEResponse(sseBody)
+
+    expect(chunks).toHaveLength(1)
+    expect(JSON.parse(chunks[0].body)).toMatchObject({ data: { ok: true } })
+  })
+
+  it('handles CRLF line endings', () => {
+    const { parseSSEResponse } = require('./networkHelpers')
+    const sseBody = `event: next\r\ndata: {"data":{"test":1}}\r\n\r\nevent: next\r\ndata: {"data":{"test":2}}`
+
+    const chunks = parseSSEResponse(sseBody)
+
+    expect(chunks).toHaveLength(2)
+    expect(JSON.parse(chunks[0].body)).toMatchObject({ data: { test: 1 } })
+    expect(JSON.parse(chunks[1].body)).toMatchObject({ data: { test: 2 } })
+  })
+
+  it('skips event: complete per GraphQL over SSE protocol', () => {
+    const { parseSSEResponse } = require('./networkHelpers')
+    const sseBody = `event: next
+      data: {"data":{"user":{"id":"1"}}}
+
+      event: complete
+      data: 
+
+      event: next
+      data: {"data":{"user":{"name":"John"}}}`
+
+    const chunks = parseSSEResponse(sseBody)
+
+    expect(chunks).toHaveLength(2)
+    expect(JSON.parse(chunks[0].body)).toMatchObject({ data: { user: { id: '1' } } })
+    expect(JSON.parse(chunks[1].body)).toMatchObject({ data: { user: { name: 'John' } } })
+  })
+
+  it('parses events without event line (default message type)', () => {
+    const { parseSSEResponse } = require('./networkHelpers')
+    const sseBody = `data: {"data":{"direct":true}}`
+
+    const chunks = parseSSEResponse(sseBody)
+
+    expect(chunks).toHaveLength(1)
+    expect(JSON.parse(chunks[0].body)).toMatchObject({ data: { direct: true } })
+  })
+})
