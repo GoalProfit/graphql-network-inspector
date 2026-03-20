@@ -76,22 +76,21 @@ export const Toolbar = (props: IToolbarProps) => {
             icon={<StopIcon />}
             onClick={onStopRecording}
             testId="stop-recording"
-            className="-mr-3 text-red-500 dark:text-red-400 dark:hover:text-red-300"
+            className="text-red-500 dark:text-red-400 dark:hover:text-red-300 whitespace-nowrap"
             variant="ghost"
-          />
+          >
+            Stop ({recordedCount})
+          </Button>
         ) : (
           <Button
             icon={<RecordIcon />}
             onClick={onStartRecording}
             testId="start-recording"
-            className="-mr-3 dark:text-gray-400 dark:hover:text-white"
+            className="text-gray-500 dark:text-gray-400 dark:hover:text-white whitespace-nowrap"
             variant="ghost"
-          />
-        )}
-        {isRecording && (
-          <span className="text-xs text-red-500 dark:text-red-400 whitespace-nowrap font-medium">
-            REC {directoryName} ({recordedCount})
-          </span>
+          >
+            Record
+          </Button>
         )}
         <Textfield
           className="w-80"
@@ -132,33 +131,7 @@ export const Toolbar = (props: IToolbarProps) => {
               className="text-gray-500 dark:text-gray-400 -ml-2"
             >
               Search
-            </Button>,
-            <a
-              href="https://www.overstacked.io/docs/graphql-network-inspector"
-              target="_blank"
-            >
-              <Button
-                icon={<DocsIcon />}
-                testId="docs-button"
-                variant="ghost"
-                className="text-gray-500 dark:text-gray-400 -ml-2 whitespace-nowrap"
-              >
-                View Docs
-              </Button>
-            </a>,
-            <a
-              href="https://www.overstacked.io/courses/graphql"
-              target="_blank"
-            >
-              <Button
-                icon={<LearnIcon />}
-                testId="learn-button"
-                variant="ghost"
-                className="text-gray-500 dark:text-gray-400 -ml-2 whitespace-nowrap"
-              >
-                Learn GraphQL
-              </Button>
-            </a>,
+            </Button>
           ]}
         />
       </Bar>
