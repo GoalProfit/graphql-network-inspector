@@ -12,6 +12,7 @@ import { useGraphqlSubscriptions } from '../../hooks/useGraphqlSubscriptions'
 import { useOperationFilters } from '../../hooks/useOperationFilters'
 import useUserSettings from '../../hooks/useUserSettings'
 import VersionNumber from '../../components/VersionNumber'
+import { useInterceptionRecorder } from '../../hooks/useInterceptionRecorder'
 
 export const Main = () => {
   const [selectedRowId, setSelectedRowId] = useState<string | number | null>(
@@ -27,6 +28,13 @@ export const Main = () => {
     })
   const { isSearchOpen } = useSearch()
   const { setActiveTab } = useNetworkTabs()
+  const {
+    isRecording,
+    directoryName,
+    recordedCount,
+    startRecording,
+    stopRecording,
+  } = useInterceptionRecorder(networkRequests)
 
   const clearRequests = useCallback(
     (opts?: IClearWebRequestsOptions) => {
@@ -61,6 +69,11 @@ export const Main = () => {
             setSelectedRowId={setSelectedRowId}
             userSettings={userSettings}
             setUserSettings={setUserSettings}
+            isRecording={isRecording}
+            recordedCount={recordedCount}
+            directoryName={directoryName}
+            onStartRecording={startRecording}
+            onStopRecording={stopRecording}
           />
         }
       />

@@ -2,6 +2,8 @@ import { Checkbox } from '../../components/Checkbox'
 import { Button } from '../../components/Button'
 import { BinIcon } from '../../components/Icons/BinIcon'
 import { SearchIcon } from '../../components/Icons/SearchIcon'
+import { RecordIcon } from '../../components/Icons/RecordIcon'
+import { StopIcon } from '../../components/Icons/StopIcon'
 import { useSearch } from '../../hooks/useSearch'
 import { Textfield } from '@/components/Textfield'
 import { OverflowPopover } from '../../components/OverflowPopover'
@@ -26,6 +28,11 @@ interface IToolbarProps {
   newestFirst: boolean
   onNewestFirstChange: (newestFirst: boolean) => void
   onClear: () => void
+  isRecording: boolean
+  recordedCount: number
+  directoryName: string | null
+  onStartRecording: () => void
+  onStopRecording: () => void
 }
 
 export const Toolbar = (props: IToolbarProps) => {
@@ -45,6 +52,11 @@ export const Toolbar = (props: IToolbarProps) => {
     newestFirst,
     onNewestFirstChange,
     onClear,
+    isRecording,
+    recordedCount,
+    directoryName,
+    onStartRecording,
+    onStopRecording,
   } = props
   const { setIsSearchOpen } = useSearch()
   const { operationFilters } = useOperationFilters()
@@ -59,6 +71,28 @@ export const Toolbar = (props: IToolbarProps) => {
           className="-mr-3 dark:text-gray-400 dark:hover:text-white"
           variant="ghost"
         />
+        {isRecording ? (
+          <Button
+            icon={<StopIcon />}
+            onClick={onStopRecording}
+            testId="stop-recording"
+            className="-mr-3 text-red-500 dark:text-red-400 dark:hover:text-red-300"
+            variant="ghost"
+          />
+        ) : (
+          <Button
+            icon={<RecordIcon />}
+            onClick={onStartRecording}
+            testId="start-recording"
+            className="-mr-3 dark:text-gray-400 dark:hover:text-white"
+            variant="ghost"
+          />
+        )}
+        {isRecording && (
+          <span className="text-xs text-red-500 dark:text-red-400 whitespace-nowrap font-medium">
+            REC {directoryName} ({recordedCount})
+          </span>
+        )}
         <Textfield
           className="w-80"
           value={filterValue}

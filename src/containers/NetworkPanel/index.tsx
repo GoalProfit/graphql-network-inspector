@@ -26,6 +26,11 @@ interface NetworkPanelProps {
   clearWebRequests: (opts?: IClearWebRequestsOptions) => void
   userSettings: IUserSettings
   setUserSettings: (userSettings: Partial<IUserSettings>) => void
+  isRecording: boolean
+  recordedCount: number
+  directoryName: string | null
+  onStartRecording: () => void
+  onStopRecording: () => void
 }
 
 /** Cache for compiled regex patterns to avoid recompilation */
@@ -102,6 +107,11 @@ export const NetworkPanel = (props: NetworkPanelProps) => {
     setSelectedRowId,
     userSettings,
     setUserSettings,
+    isRecording,
+    recordedCount,
+    directoryName,
+    onStartRecording,
+    onStopRecording,
   } = props
 
   const { operationFilters } = useOperationFilters()
@@ -245,6 +255,11 @@ export const NetworkPanel = (props: NetworkPanelProps) => {
             setSelectedRowId(null)
             clearWebRequests()
           }}
+          isRecording={isRecording}
+          recordedCount={recordedCount}
+          directoryName={directoryName}
+          onStartRecording={onStartRecording}
+          onStopRecording={onStopRecording}
         />
       }
       leftPane={

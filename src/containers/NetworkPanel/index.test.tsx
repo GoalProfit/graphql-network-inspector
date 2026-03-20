@@ -66,6 +66,11 @@ const NetworkPanelContainer = ({
     networkRequests={networkRequests}
     webSocketNetworkRequests={[]}
     clearWebRequests={() => { }}
+    isRecording={false}
+    recordedCount={0}
+    directoryName={null}
+    onStartRecording={() => { }}
+    onStopRecording={() => { }}
   />
 }
 
