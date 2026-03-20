@@ -1,6 +1,6 @@
 chrome.devtools.panels.create(
-  "GraphQL Network",
-  "/icon.png",
-  "/index.html",
+  'GraphQL Capture',
+  '/icon.png',
+  '/index.html',
   null
 )
