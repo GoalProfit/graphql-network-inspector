@@ -30,7 +30,7 @@ export const Main = () => {
   const { setActiveTab } = useNetworkTabs()
   const {
     isRecording,
-    directoryName,
+    folderName,
     recordedCount,
     startRecording,
     stopRecording,
@@ -71,7 +71,7 @@ export const Main = () => {
             setUserSettings={setUserSettings}
             isRecording={isRecording}
             recordedCount={recordedCount}
-            directoryName={directoryName}
+            directoryName={folderName}
             onStartRecording={startRecording}
             onStopRecording={stopRecording}
           />

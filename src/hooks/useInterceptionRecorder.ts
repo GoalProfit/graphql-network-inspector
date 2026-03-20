@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ICompleteNetworkRequest } from '../helpers/networkHelpers'
 import {
-  selectDirectory,
+  startRecording as startService,
+  stopRecording as stopService,
   writeInterception,
-  clearDirectoryHandle,
 } from '../services/interceptionRecorder'
 
 export interface UseInterceptionRecorderResult {
   isRecording: boolean
-  directoryName: string | null
+  folderName: string | null
   recordedCount: number
-  startRecording: () => Promise<void>
+  startRecording: () => void
   stopRecording: () => void
 }
 
@@ -46,36 +46,35 @@ export const useInterceptionRecorder = (
   networkRequests: ICompleteNetworkRequest[]
 ): UseInterceptionRecorderResult => {
   const [isRecording, setIsRecording] = useState(false)
-  const [directoryName, setDirectoryName] = useState<string | null>(null)
+  const [folderName, setFolderName] = useState<string | null>(null)
   const [recordedCount, setRecordedCount] = useState(0)
-  const dirHandleRef = useRef<any>(null)
   const writtenIdsRef = useRef<Set<string>>(new Set())
 
-  const startRecording = useCallback(async () => {
-    const handle = await selectDirectory()
-    if (handle) {
-      dirHandleRef.current = handle
-      setDirectoryName(handle.name)
-      writtenIdsRef.current = new Set(
-        networkRequests.map((r) => r.id)
-      )
-      setRecordedCount(0)
-      setIsRecording(true)
-    }
+  const startRecording = useCallback(() => {
+    const name = globalThis.prompt(
+      'Enter folder name for captured requests.\n' +
+        'Files will be saved to your Downloads directory.',
+      'graphql-intercepts'
+    )
+    if (!name) return
+
+    startService(name)
+    setFolderName(name)
+    writtenIdsRef.current = new Set(networkRequests.map((r) => r.id))
+    setRecordedCount(0)
+    setIsRecording(true)
   }, [networkRequests])
 
   const stopRecording = useCallback(() => {
+    stopService()
     setIsRecording(false)
-    dirHandleRef.current = null
-    clearDirectoryHandle()
-    setDirectoryName(null)
+    setFolderName(null)
     writtenIdsRef.current = new Set()
   }, [])
 
   useEffect(() => {
-    if (!isRecording || !dirHandleRef.current) return
+    if (!isRecording) return
 
-    const dirHandle = dirHandleRef.current
     const newCompleteRequests = networkRequests.filter(
       (req) => req.response && !writtenIdsRef.current.has(req.id)
     )
@@ -86,10 +85,10 @@ export const useInterceptionRecorder = (
         req.request.primaryOperation.operationName || 'unknown'
       const payload = buildInterceptionPayload(req)
 
-      writeInterception(dirHandle, operationName, JSON.stringify(payload, null, 2))
+      writeInterception(operationName, JSON.stringify(payload, null, 2))
       setRecordedCount((c) => c + 1)
     }
   }, [networkRequests, isRecording])
 
-  return { isRecording, directoryName, recordedCount, startRecording, stopRecording }
+  return { isRecording, folderName, recordedCount, startRecording, stopRecording }
 }

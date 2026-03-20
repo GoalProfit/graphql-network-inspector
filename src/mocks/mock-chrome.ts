@@ -130,6 +130,12 @@ const mockedChrome: DeepPartial<typeof chrome> = {
       },
     },
   },
+  downloads: {
+    download: ((_options: chrome.downloads.DownloadOptions, callback?: (downloadId: number) => void) => {
+      console.log('[MockChrome] downloads.download', _options.filename)
+      if (callback) callback(0)
+    }) as typeof chrome.downloads.download,
+  },
   debugger: {
     attach: ((_target: chrome.debugger.Debuggee, _version: string, callback?: () => void) => {
       if (callback) callback()
