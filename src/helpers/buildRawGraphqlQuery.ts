@@ -7,6 +7,7 @@ import {
   visit,
 } from 'graphql'
 import type {
+  NameNode,
   ObjectFieldNode,
   OperationDefinitionNode,
   ValueNode,
@@ -100,6 +101,18 @@ function jsValueToValueNode(value: unknown): ValueNode | null {
   return null
 }
 
+const getInlinedOperationName = (
+  operation: OperationDefinitionNode['operation']
+): NameNode => {
+  if (operation === 'mutation') {
+    return { kind: Kind.NAME, value: 'InlinedMutation' }
+  }
+  if (operation === 'subscription') {
+    return { kind: Kind.NAME, value: 'InlinedSubscription' }
+  }
+  return { kind: Kind.NAME, value: 'InlinedQuery' }
+}
+
 /**
  * Returns a single GraphQL document string with variable definitions removed
  * and `$variable` references replaced by literal values from `variables`.
@@ -121,10 +134,13 @@ export const buildRawGraphqlQuery = (
     const visited = visit(ast, {
       OperationDefinition: {
         leave(node: OperationDefinitionNode) {
-          if (!node.variableDefinitions?.length) {
-            return node
+          return {
+            ...node,
+            // Variables are inlined into the body, so remove definitions.
+            variableDefinitions: [],
+            // Keep explicit operation syntax (avoid `{ ... }` shorthand).
+            name: node.name ?? getInlinedOperationName(node.operation),
           }
-          return { ...node, variableDefinitions: [] }
         },
       },
       Variable(node) {
