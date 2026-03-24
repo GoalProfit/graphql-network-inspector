@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { buildRawGraphqlQuery } from '../helpers/buildRawGraphqlQuery'
 import { ICompleteNetworkRequest } from '../helpers/networkHelpers'
 import {
   startRecording as startService,
@@ -35,6 +36,7 @@ const buildInterceptionPayload = (req: ICompleteNetworkRequest) => ({
     query: b.query,
     variables: b.variables,
     operationName: b.operationName,
+    raw: buildRawGraphqlQuery(b.query, b.variables),
   })),
   response: {
     status: req.status,
