@@ -14,6 +14,7 @@ import {
 } from '../../hooks/useOperationFilters'
 import { IClearWebRequestsOptions } from '../../hooks/useNetworkMonitor'
 import { IUserSettings } from '@/services/userSettingsService'
+import { buildRawGraphqlQuery } from '@/helpers/buildRawGraphqlQuery'
 
 /** Debounce delay in ms for filter input */
 const FILTER_DEBOUNCE_MS = 150
@@ -197,6 +198,10 @@ export const NetworkPanel = (props: NetworkPanelProps) => {
         time: networkRequest.time,
         url: networkRequest.url,
         responseBody: networkRequest.response?.body || '',
+        rawQuery: networkRequest.request.body
+          .map((body) => buildRawGraphqlQuery(body.query, body.variables))
+          .filter((raw): raw is string => Boolean(raw))
+          .join('\n\n'),
       }
     })
   }, [filteredNetworkRequests])
@@ -213,6 +218,7 @@ export const NetworkPanel = (props: NetworkPanelProps) => {
         time: 0,
         url: websocketRequest.url,
         responseBody: '',
+        rawQuery: '',
       }
     })
   }, [filteredWebsocketNetworkRequests])

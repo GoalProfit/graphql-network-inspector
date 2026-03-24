@@ -1,4 +1,5 @@
 import { useMemo, useRef } from 'react'
+import copy from 'copy-to-clipboard'
 import prettyBytes from 'pretty-bytes'
 import prettyMs from 'pretty-ms'
 import { Table, ITableProps } from '../../../components/Table'
@@ -30,6 +31,7 @@ export interface INetworkTableDataRow {
   time: number
   url: string
   responseBody: string
+  rawQuery: string
 }
 
 export interface INetworkTableProps {
@@ -162,6 +164,29 @@ const RecordRequestButton = ({
   )
 }
 
+const CopyRawButton = ({
+  rawQuery,
+  isDisabled,
+}: {
+  rawQuery: string
+  isDisabled: boolean
+}) => {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation()
+        copy(rawQuery)
+      }}
+      disabled={isDisabled}
+      className="px-2 py-1 rounded border border-gray-400 dark:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700"
+      data-testid="column-copy-raw"
+    >
+      Copy Raw
+    </button>
+  )
+}
+
 export const NetworkTable = (props: INetworkTableProps) => {
   const {
     data,
@@ -235,6 +260,15 @@ export const NetworkTable = (props: INetworkTableProps) => {
             rowId={row.id}
             isDisabled={row.type === 'subscription'}
             onRecordRequest={onRecordRequest}
+          />
+        ),
+      },
+      {
+        Header: 'Copy Raw',
+        accessor: (row) => (
+          <CopyRawButton
+            rawQuery={row.rawQuery}
+            isDisabled={!row.rawQuery}
           />
         ),
       },
