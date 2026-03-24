@@ -16,6 +16,12 @@ import type {
 /** GraphQL `Name` token (field keys in input objects). */
 const GRAPHQL_NAME_RE = /^[A-Za-z_]\w*$/
 
+/**
+ * JSON variables often encode GraphQL enums as strings (e.g. `"asc"`).
+ * Without a schema we only promote to EnumValue for known input fields.
+ */
+const ENUM_STRING_OBJECT_FIELD_NAMES = new Set(['order'])
+
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
@@ -39,13 +45,27 @@ const arrayToListValueNode = (value: unknown[]): ValueNode | null => {
     if (item === undefined) {
       continue
     }
-    const node = jsValueToValueNode(item)
+    const node = jsValueToValueNode(item, undefined)
     if (node === null && item !== null) {
       return null
     }
     values.push(node ?? { kind: Kind.NULL })
   }
   return { kind: Kind.LIST, values }
+}
+
+const stringToValueNode = (
+  value: string,
+  objectFieldKey: string | undefined
+): ValueNode => {
+  if (
+    objectFieldKey &&
+    ENUM_STRING_OBJECT_FIELD_NAMES.has(objectFieldKey) &&
+    GRAPHQL_NAME_RE.test(value)
+  ) {
+    return { kind: Kind.ENUM, value }
+  }
+  return { kind: Kind.STRING, value, block: false }
 }
 
 const objectToObjectValueNode = (
@@ -59,7 +79,7 @@ const objectToObjectValueNode = (
     if (v === undefined) {
       continue
     }
-    const fieldValue = jsValueToValueNode(v)
+    const fieldValue = jsValueToValueNode(v, key)
     if (fieldValue === null) {
       return null
     }
@@ -76,7 +96,10 @@ const objectToObjectValueNode = (
  * Turn a runtime variables object into GraphQL value literals for inlining
  * into a document (no schema; heuristics match typical JSON variable shapes).
  */
-function jsValueToValueNode(value: unknown): ValueNode | null {
+function jsValueToValueNode(
+  value: unknown,
+  objectFieldKey: string | undefined
+): ValueNode | null {
   if (value === null) {
     return { kind: Kind.NULL }
   }
@@ -90,7 +113,7 @@ function jsValueToValueNode(value: unknown): ValueNode | null {
     return numberToValueNode(value)
   }
   if (typeof value === 'string') {
-    return { kind: Kind.STRING, value, block: false }
+    return stringToValueNode(value, objectFieldKey)
   }
   if (Array.isArray(value)) {
     return arrayToListValueNode(value)
@@ -149,7 +172,7 @@ export const buildRawGraphqlQuery = (
           return node
         }
         const value = vars[name]
-        const literal = jsValueToValueNode(value)
+        const literal = jsValueToValueNode(value, undefined)
         return literal ?? node
       },
     })
