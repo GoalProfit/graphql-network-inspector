@@ -12,6 +12,7 @@ export interface UseInterceptionRecorderResult {
   recordedCount: number
   startRecording: () => void
   stopRecording: () => void
+  recordRequest: (request: ICompleteNetworkRequest) => void
 }
 
 const tryParseJSON = (str: string | undefined): unknown => {
@@ -72,6 +73,32 @@ export const useInterceptionRecorder = (
     writtenIdsRef.current = new Set()
   }, [])
 
+  const recordRequest = useCallback(
+    (request: ICompleteNetworkRequest) => {
+      if (!request.response) return
+
+      if (!folderName) {
+        const name = globalThis.prompt(
+          'Enter folder name for captured requests.\n' +
+            'Files will be saved to your Downloads directory.',
+          'graphql-intercepts'
+        )
+        if (!name) return
+
+        startService(name)
+        setFolderName(name)
+      }
+
+      const operationName =
+        request.request.primaryOperation.operationName || 'unknown'
+      const payload = buildInterceptionPayload(request)
+
+      writeInterception(operationName, JSON.stringify(payload, null, 2))
+      setRecordedCount((c) => c + 1)
+    },
+    [folderName]
+  )
+
   useEffect(() => {
     if (!isRecording) return
 
@@ -90,5 +117,12 @@ export const useInterceptionRecorder = (
     }
   }, [networkRequests, isRecording])
 
-  return { isRecording, folderName, recordedCount, startRecording, stopRecording }
+  return {
+    isRecording,
+    folderName,
+    recordedCount,
+    startRecording,
+    stopRecording,
+    recordRequest,
+  }
 }

@@ -34,6 +34,7 @@ export const Main = () => {
     recordedCount,
     startRecording,
     stopRecording,
+    recordRequest,
   } = useInterceptionRecorder(networkRequests)
 
   const clearRequests = useCallback(
@@ -74,6 +75,7 @@ export const Main = () => {
             directoryName={folderName}
             onStartRecording={startRecording}
             onStopRecording={stopRecording}
+            onRecordRequest={recordRequest}
           />
         }
       />

@@ -71,6 +71,7 @@ const NetworkPanelContainer = ({
     directoryName={null}
     onStartRecording={() => { }}
     onStopRecording={() => { }}
+    onRecordRequest={() => { }}
   />
 }
 

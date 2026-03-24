@@ -31,6 +31,7 @@ interface NetworkPanelProps {
   directoryName: string | null
   onStartRecording: () => void
   onStopRecording: () => void
+  onRecordRequest: (request: ICompleteNetworkRequest) => void
 }
 
 /** Cache for compiled regex patterns to avoid recompilation */
@@ -112,6 +113,7 @@ export const NetworkPanel = (props: NetworkPanelProps) => {
     directoryName,
     onStartRecording,
     onStopRecording,
+    onRecordRequest,
   } = props
 
   const { operationFilters } = useOperationFilters()
@@ -269,6 +271,11 @@ export const NetworkPanel = (props: NetworkPanelProps) => {
           selectedRowId={selectedRowId}
           onRowClick={setSelectedRowId}
           onRowSelect={setSelectedRowId}
+          onRecordRequest={(rowId) => {
+            const request = networkRequests.find((item) => item.id === rowId)
+            if (!request) return
+            onRecordRequest(request)
+          }}
         />
       }
       rightPane={

@@ -37,6 +37,7 @@ export interface INetworkTableProps {
   error?: string
   onRowClick: (rowId: string | number, row: INetworkTableDataRow) => void
   onRowSelect: (rowId: string | number) => void
+  onRecordRequest?: (rowId: string | number) => void
   selectedRowId?: string | number | null
   showSingleColumn?: boolean
 }
@@ -134,12 +135,40 @@ const Time = ({ ms }: { ms: number }) => {
   )
 }
 
+const RecordRequestButton = ({
+  rowId,
+  isDisabled,
+  onRecordRequest,
+}: {
+  rowId: string
+  isDisabled: boolean
+  onRecordRequest?: (rowId: string | number) => void
+}) => {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation()
+        if (onRecordRequest) {
+          onRecordRequest(rowId)
+        }
+      }}
+      disabled={isDisabled}
+      className="px-2 py-1 rounded border border-gray-400 dark:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700"
+      data-testid="column-record"
+    >
+      Record
+    </button>
+  )
+}
+
 export const NetworkTable = (props: INetworkTableProps) => {
   const {
     data,
     error,
     onRowClick,
     onRowSelect,
+    onRecordRequest,
     selectedRowId,
     showSingleColumn,
   } = props
@@ -200,13 +229,23 @@ export const NetworkTable = (props: INetworkTableProps) => {
         accessor: (row) => <Time ms={row.time} />,
       },
       {
+        Header: 'Record',
+        accessor: (row) => (
+          <RecordRequestButton
+            rowId={row.id}
+            isDisabled={row.type === 'subscription'}
+            onRecordRequest={onRecordRequest}
+          />
+        ),
+      },
+      {
         Header: 'URL',
-        accessor: (row) => <div data-testid="column-url">{row.url}</div>,
+        accessor: 'url',
       },
     ]
 
     return showSingleColumn ? columns.slice(0, 1) : columns
-  }, [showSingleColumn])
+  }, [onRecordRequest, showSingleColumn])
 
   return (
     <div
